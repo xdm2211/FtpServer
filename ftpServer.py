@@ -60,7 +60,7 @@ appVersion = "v1.26"
 appAuthor = "JARK006"
 githubLink = "https://github.com/jark006/FtpServer"
 releaseLink = "https://github.com/jark006/FtpServer/releases"
-quarkLink = "https://pan.quark.cn/s/fb740c256653"
+lanzouLink = "https://jark006.lanzout.com/b0koxtm7g"
 baiduLink = "https://pan.baidu.com/s/1955qjdrnPtxhNhtksjqvfg?pwd=6666"
 windowsTitle = f"{appLabel} {appVersion}"
 tipsTitle = "若用户名空白则默认匿名访问(anonymous)。若中文乱码则需更换编码方式, 再重启服务。若无需开启IPv6只需将其端口留空即可, IPv4同理。请设置完后再开启服务。若需FTPS或多用户配置, 请点击“帮助”按钮查看使用说明。以下为本机所有IP地址(含所有物理网卡/虚拟网卡), 右键可复制。\n"
@@ -207,8 +207,8 @@ def showAbout():
 
     tk.Label(linksFrame, text="Github").grid(row=0, column=0)
     tk.Label(linksFrame, text="Release").grid(row=1, column=0)
-    tk.Label(linksFrame, text="夸克网盘").grid(row=2, column=0)
-    tk.Label(linksFrame, text="百度云盘").grid(row=3, column=0)
+    tk.Label(linksFrame, text="蓝奏云").grid(row=2, column=0)
+    tk.Label(linksFrame, text="百度云").grid(row=3, column=0)
 
     label1 = ttk.Label(linksFrame, text=githubLink, foreground="blue")
     label1.bind("<Button-1>", lambda event: webbrowser.open(githubLink))
@@ -218,12 +218,11 @@ def showAbout():
     label2.bind("<Button-1>", lambda event: webbrowser.open(releaseLink))
     label2.grid(row=1, column=1, sticky=tk.W)
 
-    label3 = ttk.Label(linksFrame, text=quarkLink, foreground="blue")
-    label3.bind("<Button-1>", lambda event: webbrowser.open(quarkLink))
+    label3 = ttk.Label(linksFrame, text="点击跳转 提取码: 6666", foreground="blue")
+    label3.bind("<Button-1>", lambda event: webbrowser.open(lanzouLink))
     label3.grid(row=2, column=1, sticky=tk.W)
 
-    baiduLinkTmp = baiduLink[:30] + "... 提取码: 6666"
-    label4 = ttk.Label(linksFrame, text=baiduLinkTmp, foreground="blue")
+    label4 = ttk.Label(linksFrame, text="点击跳转 提取码: 6666", foreground="blue")
     label4.bind("<Button-1>", lambda event: webbrowser.open(baiduLink))
     label4.grid(row=3, column=1, sticky=tk.W)
 
