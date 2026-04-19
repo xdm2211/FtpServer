@@ -10,21 +10,17 @@ License: MIT License
 Copyright (c) 2023-2026 JARK006
 
 # 打包工具
-    pip install pyinstaller nuitka
+    pip install Nuitka[onefile]
 
 # 第三方库需求
-    pip install Pillow pywin32 pystray pyopenssl pyasynchat windows-curses
-
-# 或者直接安装 requirements.txt
     pip install -r requirements.txt
 
 # pywin32 还需后安装
     pywin32_postinstall -install
 
-# 打包 单文件 隐藏终端窗口 以下三选一 (第一条和第二条是同一个，第一条执行过一次产生ftpServer.spec后，以后只需执行第二条)
-    pyinstaller.exe -F -w .\ftpServer.py -i .\ftpServer.ico --version-file .\file_version_info.txt
-    pyinstaller.exe .\ftpServer.spec
+# nuitka打包 分别为 单文件 和 单目录
     python -m nuitka .\ftpServer.py --windows-icon-from-ico=.\ftpServer.ico --standalone --lto=yes --python-flag=-O --enable-plugin=tk-inter --windows-console-mode=disable --company-name=JARK006 --product-name=ftpServer --file-version=1.26.0.0 --product-version=1.26.0.0 --file-description="FtpServer Github@JARK006" --copyright="Copyright (C) 2023-2026 Github@JARK006"
+    python -m nuitka .\ftpServer.py --windows-icon-from-ico=.\ftpServer.ico --standalone --lto=yes --python-flag=-O --enable-plugin=tk-inter --windows-console-mode=disable --company-name=JARK006 --product-name=ftpServer --file-version=1.26.0.0 --product-version=1.26.0.0 --file-description="FtpServer Github@JARK006" --copyright="Copyright (C) 2023-2026 Github@JARK006" --onefile
 """
 
 # 标准库导入
