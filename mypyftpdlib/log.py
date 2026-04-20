@@ -25,7 +25,6 @@ logger = logging.getLogger("pyftpdlib")
 LEVEL = logging.INFO
 PREFIX = "[%(levelname)1.1s %(asctime)s]"
 PREFIX_MPROC = "[%(levelname)1.1s %(asctime)s %(process)s]"
-COLOURED = term_supports_colors()
 TIME_FORMAT = "%H:%M:%S"
 
 
@@ -43,30 +42,7 @@ class LogFormatter(logging.Formatter):
 
     def __init__(self, *args, **kwargs):
         logging.Formatter.__init__(self, *args, **kwargs)
-        self._coloured = COLOURED and term_supports_colors()
-        if self._coloured:
-            curses.setupterm()
-            # The curses module has some str/bytes confusion in
-            # python3. Until version 3.2.3, most methods return
-            # bytes, but only accept strings. In addition, we want to
-            # output these strings with the logging module, which
-            # works with unicode strings. The explicit calls to
-            # str() below are harmless in python2 but will do the
-            # right conversion in python 3.
-            fg_color = (
-                curses.tigetstr("setaf") or curses.tigetstr("setf") or ""
-            )
-            self._colors = {
-                # blues
-                logging.DEBUG: str(curses.tparm(fg_color, 4), "ascii"),
-                # green
-                logging.INFO: str(curses.tparm(fg_color, 2), "ascii"),
-                # yellow
-                logging.WARNING: str(curses.tparm(fg_color, 3), "ascii"),
-                # red
-                logging.ERROR: str(curses.tparm(fg_color, 1), "ascii"),
-            }
-            self._normal = str(curses.tigetstr("sgr0"), "ascii")
+
 
     def format(self, record):
         try:
@@ -78,12 +54,6 @@ class LogFormatter(logging.Formatter):
             TIME_FORMAT, self.converter(record.created)
         )
         prefix = self.PREFIX % record.__dict__
-        if self._coloured:
-            prefix = (
-                self._colors.get(record.levelno, self._normal)
-                + prefix
-                + self._normal
-            )
 
         # Encoding notes:  The logging module prefers to work with character
         # strings, but only enforces that log messages are instances of

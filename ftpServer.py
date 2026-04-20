@@ -24,6 +24,7 @@ Copyright (c) 2023-2026 JARK006
 """
 
 # 标准库导入
+import logging
 import os
 import queue
 import socket
@@ -237,7 +238,7 @@ def deleteCurrentComboboxItem():
         settings.directoryList = [settings.appDirectory]
         directoryCombobox["value"] = tuple(settings.directoryList)
         directoryCombobox.current(0)
-        print("目录列表已清空, 默认恢复到程序所在目录")
+        logger.info("目录列表已清空, 默认恢复到程序所在目录")
         return
 
     currentValue = directoryCombobox.get()
@@ -304,8 +305,8 @@ def updateSettingVars():
         tips: str = (
             f"当前 IPv4 端口值: [ {IPv4PortVar.get()} ] 异常, 正常范围: 1 ~ 65535, 已重设为: 21"
         )
+        logger.warning(tips)
         messagebox.showwarning("IPv4 端口值异常", tips)
-        print(tips)
         settings.IPv4Port = 21
         IPv4PortVar.set("21")
 
@@ -319,8 +320,8 @@ def updateSettingVars():
         tips: str = (
             f"当前 IPv6 端口值: [ {IPv6PortVar.get()} ] 异常, 正常范围: 1 ~ 65535, 已重设为: 21"
         )
+        logger.warning(tips)
         messagebox.showwarning("IPv6 端口值异常", tips)
-        print(tips)
         settings.IPv6Port = 21
         IPv6PortVar.set("21")
 
@@ -384,10 +385,10 @@ def startServer():
     global tipsTextWidgetRightClickMenu
 
     if isIPv4ThreadRunning:
-        print("[FTP IPv4] 正在运行")
+        logger.info("IPv4 服务正在运行")
         return
     if isIPv6ThreadRunning:
-        print("[FTP IPv6] 正在运行")
+        logger.info("IPv6 服务正在运行")
         return
 
     updateSettingVars()
@@ -396,8 +397,8 @@ def startServer():
         tips: str = (
             f"路径: [ {settings.directoryList[0]} ]异常！请检查路径是否正确或者有没有读取权限。"
         )
+        logger.warning(tips)
         messagebox.showerror("路径异常", tips)
-        print(tips)
         return
 
     userList.load()
@@ -406,18 +407,14 @@ def startServer():
         userPasswordEntry.configure(state=tk.NORMAL)
         if len(settings.userName) > 0 and len(settings.userPassword) == 0:
             tips: str = "!!! 请设置密码再启动服务 !!!"
+            logger.warning(tips)
             messagebox.showerror("密码异常", tips)
-            print(tips)
             return
         if (
             settings.userName == "anonymous" or len(settings.userName) == 0
         ) and settings.isReadOnly == False:
-            print(
-                "警告：当前允许【匿名用户】登录，且拥有【写入、修改】文件权限，请谨慎对待。"
-            )
-            print(
-                "若是安全的内网环境可忽略以上警告，否则【匿名用户】应当选择【只读】权限。"
-            )
+            logger.warning("警告：当前允许【匿名用户】登录，且拥有【写入、修改】文件权限，请谨慎对待。")
+            logger.warning("若是安全的内网环境可忽略以上警告，否则【匿名用户】应当选择【只读】权限。")
     else:
         userNameEntry.configure(state=tk.DISABLED)
         userPasswordEntry.configure(state=tk.DISABLED)
@@ -426,8 +423,8 @@ def startServer():
 
     if len(ftpUrlList) == 0:
         tips: str = "!!! 本机没有检测到网络IP, 请检查端口设置或网络连接, 或稍后重试 !!!"
+        logger.warning(tips)
         messagebox.showerror("网络或端口设置异常", tips)
-        print(tips)
         return
 
     settings.save()
@@ -457,19 +454,19 @@ def startServer():
 
         if not hasStartServer:
             tips: str = "!!! 未检测到有效端口, 服务无法启动, 请检查端口设置是否正确 !!!"
+            logger.warning(tips)
             messagebox.showerror("端口异常", tips)
-            print(tips)
             return
 
     except Exception as e:
         tips: str = f"!!! 发生异常, 无法启动线程 !!!\n{e}"
+        logger.warning(tips)
         messagebox.showerror("启动异常", tips)
-        print(tips)
         return
 
     if userList.isEmpty():
-        print(
-            "\n用户: {}\n密码: {}\n权限: {}\n编码: {}\n目录: {}\n".format(
+        logger.info(
+            "\n\n用户: {}\n密码: {}\n权限: {}\n编码: {}\n目录: {}\n".format(
                 (
                     settings.userName
                     if len(settings.userName) > 0
@@ -483,7 +480,7 @@ def startServer():
         )
     else:
         userList.print()
-        print(f"编码: {'GBK' if settings.isGBK else 'UTF-8'}\n")
+        logger.info(f"编码: {'GBK' if settings.isGBK else 'UTF-8'}\n")
 
 
 def serverThreadFun(IP_Family: str):
@@ -526,7 +523,7 @@ def serverThreadFun(IP_Family: str):
         handler.keyfile = keyFilePath  # type: ignore
         handler.tls_control_required = True
         handler.tls_data_required = True
-        print(
+        logger.info(
             "已加载 TLS/SSL 证书文件, 默认开启 FTPS [TLS/SSL显式加密, TLSv1.3]"
         )
     else:
@@ -539,18 +536,18 @@ def serverThreadFun(IP_Family: str):
 
     if IP_Family == "IPv4":
         serverV4 = ThreadedFTPServer(("0.0.0.0", settings.IPv4Port), handler)
-        print("[FTP IPv4] 开始运行")
+        logger.info("IPv4服务开始运行")
         isIPv4ThreadRunning = True
         serverV4.serve_forever()
         isIPv4ThreadRunning = False
-        print("[FTP IPv4] 已关闭")
+        logger.info("IPv4服务已关闭")
     else:
         serverV6 = ThreadedFTPServer(("::", settings.IPv6Port), handler)
-        print("[FTP IPv6] 开始运行")
+        logger.info("IPv6服务开始运行")
         isIPv6ThreadRunning = True
         serverV6.serve_forever()
         isIPv6ThreadRunning = False
-        print("[FTP IPv6] 已关闭")
+        logger.info("IPv6服务已关闭")
 
 
 def closeServer():
@@ -566,17 +563,17 @@ def closeServer():
 
     if isIPv4Supported and settings.IPv4Port > 0:
         if isIPv4ThreadRunning:
-            print("[FTP IPv4] 正在关闭...")
+            logger.info("IPv4服务线程正在关闭...")
             serverV4.close_all()  # 注意: 这也会关闭serverV6的所有连接
             serverThreadV4.join()
-        print("[FTP IPv4] 线程已关闭")
+        logger.info("IPv4服务线程已关闭")
 
     if isIPv6Supported and settings.IPv6Port > 0:
         if isIPv6ThreadRunning:
-            print("[FTP IPv6] 正在关闭...")
+            logger.info("IPv6服务线程正在关闭...")
             serverV6.close_all()
             serverThreadV6.join()
-        print("[FTP IPv6] 线程已关闭")
+        logger.info("IPv6服务线程已关闭")
 
 
 def pickDirectory():
@@ -598,8 +595,8 @@ def pickDirectory():
         directoryCombobox.current(0)
     else:
         tips: str = f"路径不存在或无访问权限: [ {directory} ]"
+        logger.warning(tips)
         messagebox.showerror("路径异常", tips)
-        print(tips)
 
 
 def showWindow():
@@ -632,7 +629,7 @@ def handleExit(strayIcon):
     strayIcon.visible = False
     strayIcon.stop()
 
-    print("等待日志线程退出...")
+    logger.info("等待日志线程退出...")
     logThreadrunning = False
     logThread.join()
 
@@ -661,7 +658,7 @@ def setAsStartupItem():
             pass
 
     if not startup_folder or not os.path.exists(startup_folder):
-        print(f"无法获取启动目录: {startup_folder}")
+        logger.error(f"无法获取启动目录: {startup_folder}")
         return
 
     # 获取当前程序路径
@@ -684,15 +681,15 @@ def setAsStartupItem():
         updateSettingVars()
         settings.save()
 
-        print(f"已添加开机启动项: {shortcut_path}")
+        logger.info(f"已创建开机启动项: {shortcut_path}")
 
     except Exception as e:
-        print(f"创建开机启动项失败: {e}")
+        logger.error(f"创建开机启动项失败: {e}")
 
 
 def removeStartupItem():
     """
-    移除开机启动项。
+    删除开机启动项。
     """
     global settings
     global isAutoStartServerVar
@@ -714,7 +711,7 @@ def removeStartupItem():
             pass
 
     if not startup_folder:
-        print(f"无法获取启动目录，无法确认开机启动项是否存在")
+        logger.warning(f"无法获取启动目录，无法确认开机启动项是否存在")
         return
 
     # 快捷方式文件名
@@ -722,14 +719,14 @@ def removeStartupItem():
     shortcut_path = os.path.join(startup_folder, shortcut_name)
 
     if not os.path.exists(shortcut_path):
-        print(f"开机启动项不存在: {shortcut_path}")
+        logger.warning(f"开机启动项不存在: {shortcut_path}")
         return
 
     try:
         os.remove(shortcut_path)
-        print(f"已移除开机启动项: {shortcut_path}")
+        logger.info(f"已删除开机启动项: {shortcut_path}")
     except Exception as e:
-        print(f"移除开机启动项失败: {e}")
+        logger.error(f"删除开机启动项失败: {e}")
 
 
 def generateTlsCert():
@@ -766,17 +763,17 @@ def generateTlsCert():
         with open(certFilePath, "wb") as f:
             f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
 
-        print(f"已生成 TLS/SSL 密钥: {keyFilePath}")
-        print(f"已生成 TLS/SSL 证书: {certFilePath}")
-        print("证书有效期10年，重启服务器后可启用 FTPS [TLS/SSL 显式加密]")
+        logger.info(f"已生成 TLS/SSL 密钥: {keyFilePath}")
+        logger.info(f"已生成 TLS/SSL 证书: {certFilePath}")
+        logger.info("证书有效期10年，重启服务器后可启用 FTPS [TLS/SSL 显式加密]")
 
     except Exception as e:
-        print(f"生成 TLS/SSL 证书失败: {e}")
+        logger.error(f"生成 TLS/SSL 证书失败: {e}")
 
 
 def removeTlsCert():
     """
-    移除 TLS/SSL 证书与密钥 [FTPS]。
+    移除 FTPS TLS/SSL 证书与密钥。
     """
     global certFilePath
     global keyFilePath
@@ -784,10 +781,10 @@ def removeTlsCert():
     try:
         os.remove(certFilePath)
         os.remove(keyFilePath)
-        print(f"已移除 TLS/SSL 证书: {certFilePath}")
-        print(f"已移除 TLS/SSL 密钥: {keyFilePath}")
+        logger.info(f"已移除 TLS/SSL 证书: {certFilePath}")
+        logger.info(f"已移除 TLS/SSL 密钥: {keyFilePath}")
     except Exception as e:
-        print(f"移除 TLS/SSL 证书失败: {e}")
+        logger.error(f"移除 TLS/SSL 证书失败: {e}")
 
 
 def logThreadFun():
@@ -854,7 +851,7 @@ def getTipsAndUrlList():
             elif ipStr[:4] == "2408":
                 IPv6IPstr += f"\n[IPv6 联通公网] {fullUrl}"
             elif ipStr[:4] == "2409":
-                IPv6IPstr += f"\n[IPv6 移动铁通公网] {fullUrl}"
+                IPv6IPstr += f"\n[IPv6 移动公网] {fullUrl}"
             else:
                 IPv6IPstr += f"\n[IPv6 公网] {fullUrl}"
         elif (settings.IPv4Port > 0) and ("." in ipStr):  # IPv4
@@ -889,7 +886,7 @@ def find_and_activate_window() -> bool:
             user32.SetForegroundWindow(hwnd)
             return True
     except Exception as e:
-        print(f"激活已运行窗口时出错: {e}")
+        logger.error(f"激活已运行窗口时出错: {e}")
 
     return False
 
@@ -911,21 +908,21 @@ def check_single_instance() -> tuple[bool, int]:
 
         # ERROR_ALREADY_EXISTS = 183
         if last_error == 183:
-            print("检测到已有实例运行，正在激活窗口...")
+            logger.info("检测到已有实例运行，正在激活窗口...")
             if find_and_activate_window():
                 return False, 0
             else:
-                print("警告：无法激活已运行窗口，仍将启动新实例")
+                logger.warning("警告：无法激活已运行窗口，仍将启动新实例")
                 return True, mutex
         elif mutex == 0:
-            print(f"创建 Mutex 失败，错误码: {last_error}")
+            logger.error(f"创建 Mutex 失败，错误码: {last_error}")
             return True, 0
         else:
             # 首次运行
             return True, mutex
 
     except Exception as e:
-        print(f"单实例检查出错: {e}")
+        logger.error(f"单实例检查出错: {e}")
         return True, 0
 
 
@@ -952,6 +949,7 @@ def main():
     global isGBKVar
     global isAutoStartServerVar
     global mutex_handle
+    global logger
 
     # 检查单实例
     is_first_instance, mutex_handle = check_single_instance()
@@ -965,6 +963,15 @@ def main():
     mystd = myStdout()  # 实例化重定向类
     logThread = threading.Thread(target=logThreadFun)
     logThread.start()
+
+    # 日志配置
+    logger = logging.getLogger("ftpserver")
+    logger.setLevel(logging.INFO)
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(
+        logging.Formatter("[%(levelname)1.1s %(asctime)s] %(message)s", datefmt="%H:%M:%S")
+    )
+    logger.addHandler(_handler)
 
     mainWindow = tk.Tk()  # 实例化tk对象
     ScaleFactor = int(mainWindow.tk.call("tk", "scaling") * 75)
@@ -987,9 +994,9 @@ def main():
 
     strayMenu = (
         pystray.MenuItem("设为开机启动", setAsStartupItem),
-        pystray.MenuItem("移除开机启动", removeStartupItem),
-        pystray.MenuItem("生成TLS/SSL证书[FTPS]", generateTlsCert),
-        pystray.MenuItem("移除TLS/SSL证书[FTPS]", removeTlsCert),
+        pystray.MenuItem("取消开机启动", removeStartupItem),
+        pystray.MenuItem("生成 TLS/SSL 证书 (启用FTPS)", generateTlsCert),
+        pystray.MenuItem("移除 TLS/SSL 证书 (禁用FTPS)", removeTlsCert),
         pystray.MenuItem("显示", showWindow, default=True),
         pystray.MenuItem("退出", handleExit),
     )
@@ -1141,7 +1148,7 @@ def main():
         mainWindow.withdraw()
 
     if os.path.exists(certFilePath) and os.path.exists(keyFilePath):
-        print("检测到 TLS/SSL 证书文件, 默认使用 FTPS [TLS/SSL显式加密, TLSv1.3]")
+        logger.info("检测到 TLS/SSL 证书文件, 默认使用 FTPS [TLS/SSL显式加密, TLSv1.3]")
 
     mainWindow.mainloop()
 
