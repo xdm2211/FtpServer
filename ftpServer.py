@@ -74,8 +74,8 @@ permReadWrite: str = "elradfmwMT"
 
 isIPv4Supported: bool = False
 isIPv6Supported: bool = False
-isIPv4ThreadRunning: bool = False
-isIPv6ThreadRunning: bool = False
+isIPv4ThreadRunning = threading.Event()
+isIPv6ThreadRunning = threading.Event()
 
 certFilePath: str = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "ftpServer.crt")
 keyFilePath: str = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "ftpServer.key")
@@ -300,30 +300,30 @@ def updateSettingVars():
         if 0 <= IPv4PortInt and IPv4PortInt < 65536:
             settings.IPv4Port = IPv4PortInt
         else:
-            raise
-    except:
+            raise ValueError("IPv4 端口值异常")
+    except ValueError as e:
         tips: str = (
-            f"当前 IPv4 端口值: [ {IPv4PortVar.get()} ] 异常, 正常范围: 1 ~ 65535, 已重设为: 21"
+            f"当前端口值: [ {IPv4PortVar.get()} ], 正常范围: 1 ~ 65535, 已重设为: 21"
         )
-        logger.warning(tips)
-        messagebox.showwarning("IPv4 端口值异常", tips)
         settings.IPv4Port = 21
         IPv4PortVar.set("21")
+        logger.warning(tips)
+        messagebox.showwarning(str(e), tips)
 
     try:
         IPv6PortInt = 0 if IPv6PortVar.get() == "" else int(IPv6PortVar.get())
         if 0 <= IPv6PortInt and IPv6PortInt < 65536:
             settings.IPv6Port = IPv6PortInt
         else:
-            raise
-    except:
+            raise ValueError("IPv6 端口值异常")
+    except ValueError as e:
         tips: str = (
-            f"当前 IPv6 端口值: [ {IPv6PortVar.get()} ] 异常, 正常范围: 1 ~ 65535, 已重设为: 21"
+            f"当前端口值: [ {IPv6PortVar.get()} ], 正常范围: 1 ~ 65535, 已重设为: 21"
         )
-        logger.warning(tips)
-        messagebox.showwarning("IPv6 端口值异常", tips)
         settings.IPv6Port = 21
         IPv6PortVar.set("21")
+        logger.warning(tips)
+        messagebox.showwarning(str(e), tips)
 
 
 class myStdout:  # 重定向输出
@@ -339,10 +339,14 @@ class myStdout:  # 重定向输出
 
 
 def copyToClipboard(text: str):
-    if len(text) > 0:
-        win32clipboard.OpenClipboard()
+    if not text or len(text.strip()) == 0:
+        return
+
+    win32clipboard.OpenClipboard()
+    try:
         win32clipboard.EmptyClipboard()
         win32clipboard.SetClipboardData(win32con.CF_UNICODETEXT, text)
+    finally:
         win32clipboard.CloseClipboard()
 
 
@@ -373,8 +377,6 @@ def is_internal_ip(ip_str: str) -> bool:
 def startServer():
     global settings
     global userList
-    global userNameEntry
-    global userPasswordEntry
     global serverThreadV4
     global serverThreadV6
     global isIPv4Supported
@@ -384,10 +386,10 @@ def startServer():
     global tipsTextWidget
     global tipsTextWidgetRightClickMenu
 
-    if isIPv4ThreadRunning:
+    if isIPv4ThreadRunning.is_set():
         logger.info("IPv4 服务正在运行")
         return
-    if isIPv6ThreadRunning:
+    if isIPv6ThreadRunning.is_set():
         logger.info("IPv6 服务正在运行")
         return
 
@@ -403,8 +405,6 @@ def startServer():
 
     userList.load()
     if userList.isEmpty():
-        userNameEntry.configure(state=tk.NORMAL)
-        userPasswordEntry.configure(state=tk.NORMAL)
         if len(settings.userName) > 0 and len(settings.userPassword) == 0:
             tips: str = "!!! 请设置密码再启动服务 !!!"
             logger.warning(tips)
@@ -415,9 +415,6 @@ def startServer():
         ) and settings.isReadOnly == False:
             logger.warning("警告：当前允许【匿名用户】登录，且拥有【写入、修改】文件权限，请谨慎对待。")
             logger.warning("若是安全的内网环境可忽略以上警告，否则【匿名用户】应当选择【只读】权限。")
-    else:
-        userNameEntry.configure(state=tk.DISABLED)
-        userPasswordEntry.configure(state=tk.DISABLED)
 
     tipsStr, ftpUrlList = getTipsAndUrlList()
 
@@ -537,16 +534,16 @@ def serverThreadFun(IP_Family: str):
     if IP_Family == "IPv4":
         serverV4 = ThreadedFTPServer(("0.0.0.0", settings.IPv4Port), handler)
         logger.info("IPv4服务开始运行")
-        isIPv4ThreadRunning = True
+        isIPv4ThreadRunning.set()
         serverV4.serve_forever()
-        isIPv4ThreadRunning = False
+        isIPv4ThreadRunning.clear()
         logger.info("IPv4服务已关闭")
     else:
         serverV6 = ThreadedFTPServer(("::", settings.IPv6Port), handler)
         logger.info("IPv6服务开始运行")
-        isIPv6ThreadRunning = True
+        isIPv6ThreadRunning.set()
         serverV6.serve_forever()
-        isIPv6ThreadRunning = False
+        isIPv6ThreadRunning.clear()
         logger.info("IPv6服务已关闭")
 
 
@@ -562,14 +559,14 @@ def closeServer():
     global isIPv6Supported
 
     if isIPv4Supported and settings.IPv4Port > 0:
-        if isIPv4ThreadRunning:
+        if isIPv4ThreadRunning.is_set():
             logger.info("IPv4服务线程正在关闭...")
             serverV4.close_all()  # 注意: 这也会关闭serverV6的所有连接
             serverThreadV4.join()
         logger.info("IPv4服务线程已关闭")
 
     if isIPv6Supported and settings.IPv6Port > 0:
-        if isIPv6ThreadRunning:
+        if isIPv6ThreadRunning.is_set():
             logger.info("IPv6服务线程正在关闭...")
             serverV6.close_all()
             serverThreadV6.join()
@@ -634,7 +631,7 @@ def handleExit(strayIcon):
     logThread.join()
 
     mainWindow.destroy()
-    exit(0)
+    sys.exit(0)
 
 
 def setAsStartupItem():
@@ -649,13 +646,6 @@ def setAsStartupItem():
         os.environ.get('APPDATA', ''),
         r'Microsoft\Windows\Start Menu\Programs\Startup'
     )
-
-    if not startup_folder or not os.path.exists(startup_folder):
-        # 回退方案：使用 shell 特殊文件夹
-        try:
-            startup_folder = ctypes.windll.shell32.SHGetFolderPathW(0, 7, 0, 0)
-        except Exception:
-            pass
 
     if not startup_folder or not os.path.exists(startup_folder):
         logger.error(f"无法获取启动目录: {startup_folder}")
@@ -703,12 +693,6 @@ def removeStartupItem():
         os.environ.get('APPDATA', ''),
         r'Microsoft\Windows\Start Menu\Programs\Startup'
     )
-
-    if not startup_folder or not os.path.exists(startup_folder):
-        try:
-            startup_folder = ctypes.windll.shell32.SHGetFolderPathW(0, 7, 0, 0)
-        except Exception:
-            pass
 
     if not startup_folder:
         logger.warning(f"无法获取启动目录，无法确认开机启动项是否存在")
@@ -793,26 +777,19 @@ def logThreadFun():
 
     logMsgBackup = []
     while logThreadrunning:
-        if logMsg.empty():
-            time.sleep(0.1)
+        try:
+            logInfo = logMsg.get(timeout=0.2)
+        except queue.Empty:
             continue
 
-        logInfo = ""
-        while not logMsg.empty():
-            logInfo += logMsg.get()
-
         logMsgBackup.append(logInfo)
-        if len(logMsgBackup) > 500:
-            loggingWidget.configure(state=tk.NORMAL)
-            loggingWidget.delete(0.0, tk.END)
-            loggingWidget.configure(state=tk.DISABLED)
-
-            logMsgBackup = logMsgBackup[-20:]
-            logInfo = ""
-            for tmp in logMsgBackup:
-                logInfo += tmp
-
+        
         loggingWidget.configure(state=tk.NORMAL)
+        if len(logMsgBackup) > 200:
+            loggingWidget.delete(0.0, tk.END)
+            logMsgBackup = logMsgBackup[-50:]
+            logInfo = "".join(logMsgBackup)
+
         loggingWidget.insert(tk.END, logInfo)
         loggingWidget.see(tk.END)
         loggingWidget.configure(state=tk.DISABLED)
@@ -985,7 +962,7 @@ def main():
     mainWindow.geometry(f"{scale(600)}x{scale(500)}")
     mainWindow.minsize(scale(600), scale(500))
 
-    ftpIcon = myUtils.iconObj()  # 创建主窗口后才能初始化图标
+    ftpIcon = myUtils.IconObj()  # 创建主窗口后才能初始化图标
 
     mainWindow.title(windowsTitle)
     iconImage = ftpIcon.iconImageTk
@@ -1114,8 +1091,6 @@ def main():
     userList = UserList.UserList()
     if not userList.isEmpty():
         userList.print()
-        userNameEntry.configure(state=tk.DISABLED)
-        userPasswordEntry.configure(state=tk.DISABLED)
 
     directoryCombobox["value"] = tuple(settings.directoryList)
     directoryCombobox.current(0)

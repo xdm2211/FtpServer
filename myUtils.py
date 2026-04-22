@@ -1,8 +1,22 @@
 import base64
 import io
+import os
+import sys
 from PIL import Image, ImageTk
 
-class iconObj():
+
+def getAppDirectory() -> str:
+    appDirectory = str(os.path.dirname(sys.argv[0])).replace("\\", "/")
+    if (
+        len(appDirectory) > 2
+        and appDirectory[0].islower()
+        and appDirectory[1] == ":"
+    ):
+        appDirectory = appDirectory[0].upper() + appDirectory[1:]
+    return appDirectory
+
+
+class IconObj():
     """
     import base64
     with open(r"ico64x64.ico", "rb") as f:

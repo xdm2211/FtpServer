@@ -1,4 +1,5 @@
 import os, sys, json, hashlib
+import myUtils
 from typing import Any
 
 class Settings:
@@ -7,13 +8,7 @@ class Settings:
     defaultUserPassword = "123456"
 
     def __init__(self) -> None:
-        self.appDirectory = str(os.path.dirname(os.path.abspath(sys.argv[0]))).replace("\\", "/")
-        if (
-            len(self.appDirectory) > 2
-            and self.appDirectory[0].islower()
-            and self.appDirectory[1] == ":"
-        ):
-            self.appDirectory = self.appDirectory[0].upper() + self.appDirectory[1:]
+        self.appDirectory = myUtils.getAppDirectory()
 
         self.savePath = os.path.join(self.appDirectory, "ftpServer.json")
 
@@ -42,27 +37,17 @@ class Settings:
             return
 
         try:
-            with open(self.savePath, "r") as file:
+            with open(self.savePath, "r", encoding="utf-8") as file:
                 variables = json.load(file)
 
-            if "rootDirectory" in variables:  # old version: v1.11 and lower
-                self.directoryList = [variables["rootDirectory"]]
-                self.userName = variables["userName"]
-                self.userPassword = variables["userPassword"]
-                self.IPv4Port = int(variables["ipv4Port"])  # 旧版是小写 "ip"
-                self.IPv6Port = int(variables["ipv6Port"])
-                self.isGBK = variables["isGBK"] == "1"
-                self.isReadOnly = variables["isReadOnly"] == "1"
-                self.isAutoStartServer = variables["isAutoStartServer"] == "1"
-            else:
-                self.directoryList = variables["directoryList"]
-                self.userName = variables["userName"]
-                self.userPassword = variables["userPassword"]
-                self.IPv4Port = variables["IPv4Port"]
-                self.IPv6Port = variables["IPv6Port"]
-                self.isGBK = variables["isGBK"]
-                self.isReadOnly = variables["isReadOnly"]
-                self.isAutoStartServer = variables["isAutoStartServer"]
+            self.directoryList = variables.get("directoryList", [self.appDirectory])
+            self.userName = variables.get("userName", Settings.defaultUserName)
+            self.userPassword = variables.get("userPassword", self.encry2sha256(Settings.defaultUserPassword))
+            self.IPv4Port = variables.get("IPv4Port", 21)
+            self.IPv6Port = variables.get("IPv6Port", 0)
+            self.isGBK = variables.get("isGBK", True)
+            self.isReadOnly = variables.get("isReadOnly", True)
+            self.isAutoStartServer = variables.get("isAutoStartServer", False)
 
             # 检查变量类型
             if not type(self.directoryList) is list:
@@ -106,8 +91,7 @@ class Settings:
     def save(self):
         """保存前确保调用 updateSettingVars() 或其他函数进行参数检查"""
 
-        while len(self.directoryList) > 20:
-            self.directoryList.pop()
+        self.directoryList = self.directoryList[:20]
 
         variables: dict[str, Any] = {
             "directoryList": self.directoryList,
@@ -120,8 +104,8 @@ class Settings:
             "isAutoStartServer": self.isAutoStartServer,
         }
         try:
-            with open(self.savePath, "w") as file:
-                json.dump(variables, file)
+            with open(self.savePath, "w", encoding="utf-8") as file:
+                json.dump(variables, file, ensure_ascii=False, indent=4)
         except Exception as e:
             print(f"设置文件保存异常: {self.savePath}\n{e}")
             return

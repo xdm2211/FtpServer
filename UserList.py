@@ -1,6 +1,7 @@
-import Settings
 import os
 import sys
+import Settings
+import myUtils
 
 
 class UserNode:
@@ -20,7 +21,7 @@ def permTranslate(perm: str) -> str:
         return perm
 
 
-def permConvert(perm: str) -> str:
+def permConvert(permInput: str) -> str:
     """
     Link: https://pyftpdlib.readthedocs.io/en/latest/api.html#pyftpdlib.authorizers.DummyAuthorizer.add_user
     读取权限：
@@ -38,32 +39,24 @@ def permConvert(perm: str) -> str:
     - "T" = 更新文件上次修改时间 (MFMT 命令)
     """
 
-    if perm.lower() == "readonly" or perm == "只读":
-        return "elr"
-    elif perm.lower() == "readwrite" or perm == "读写":
-        return "elradfmwMT"
+    readOnlyPerm = "elr"
+    readwritePerm = "elradfmwMT"
+
+    if permInput.lower() == "readonly" or permInput == "只读":
+        return readOnlyPerm
+    elif permInput.lower() == "readwrite" or permInput == "读写":
+        return readwritePerm
     else:
-        charSet = set()
-        for c in perm:
-            if c not in "elradfmwMT":
-                continue
-            if c not in charSet:
-                charSet.add(c)
+        charSet = {c for c in permInput if c in readwritePerm}
         if len(charSet) == 0:
-            return "elr"
+            return readOnlyPerm
         else:
-            return "".join(charSet)
+            return "".join(c for c in readwritePerm if c in charSet)
 
 
 class UserList:
     def __init__(self) -> None:
-        self.appDirectory = str(os.path.dirname(sys.argv[0])).replace("\\", "/")
-        if (
-            len(self.appDirectory) > 2
-            and self.appDirectory[0].islower()
-            and self.appDirectory[1] == ":"
-        ):
-            self.appDirectory = self.appDirectory[0].upper() + self.appDirectory[1:]
+        self.appDirectory = myUtils.getAppDirectory()
 
         self.userListCsvPath = os.path.join(self.appDirectory, "FtpServerUserList.csv")
 
@@ -76,7 +69,7 @@ class UserList:
             try:
                 with open(self.userListCsvPath, 'r', encoding=encoding) as file:
                     return file.read().splitlines()
-            except:
+            except (UnicodeDecodeError, ValueError):
                 continue
         print(f"无法使用UTF-8或GBK编码读取文件 {self.userListCsvPath}")
         return [""]
