@@ -1,5 +1,6 @@
+import csv
+import io
 import os
-import sys
 import Settings
 import myUtils
 
@@ -57,22 +58,59 @@ def permConvert(permInput: str) -> str:
 class UserList:
     def __init__(self) -> None:
         self.appDirectory = myUtils.getAppDirectory()
-
         self.userListCsvPath = os.path.join(self.appDirectory, "FtpServerUserList.csv")
-
         self.userList: list[UserNode] = list()
         self.userNameSet: set[str] = set()
         self.load()
 
-    def readAllLines(self) -> list[str]:
+    def _readFileContent(self) -> str:
         for encoding in ['utf-8-sig', 'gbk']:
             try:
                 with open(self.userListCsvPath, 'r', encoding=encoding) as file:
-                    return file.read().splitlines()
+                    return file.read()
             except (UnicodeDecodeError, ValueError):
                 continue
         print(f"无法使用UTF-8或GBK编码读取文件 {self.userListCsvPath}")
-        return [""]
+        return ""
+
+    def _validateRow(self, row: list[str], lineNum: int, rawLine: str) -> UserNode | None:
+        if len(row) < 4:
+            print(f"第{lineNum}行 解析错误(列数不足) [{rawLine}]")
+            return None
+
+        userName = row[0].strip()
+        password = row[1].strip()
+        permInput = row[2].strip()
+        rootPath = row[3].strip()
+
+        if not userName or not password or not rootPath:
+            if userName and not password and userName != "anonymous":
+                print(f"第{lineNum}行 该用户名条目 [{userName}] 没有密码"
+                      f"(只有匿名用户 anonymous 可以不设密码)，已跳过此内容 [{rawLine}]")
+                return None
+            if not userName or not rootPath:
+                print(f"第{lineNum}行 解析错误(用户名或路径为空) [{rawLine}]")
+                return None
+
+        if userName in self.userNameSet:
+            print(f"第{lineNum}行 发现重复的用户名条目 [{userName}], 已跳过此内容 [{rawLine}]")
+            return None
+
+        if not os.path.exists(rootPath):
+            print(f"第{lineNum}行 该用户名条目 [{userName}] 的路径不存在或无访问权限 [{rootPath}] 已跳过此内容 [{rawLine}]")
+            return None
+
+        if userName != "anonymous" and not password:
+            print(f"第{lineNum}行 该用户名条目 [{userName}] 没有密码"
+                  f"(只有匿名用户 anonymous 可以不设密码)，已跳过此内容 [{rawLine}]")
+            return None
+
+        return UserNode(
+            userName,
+            Settings.Settings.encry2sha256(password),
+            permConvert(permInput),
+            rootPath,
+        )
 
     def load(self):
         self.userList.clear()
@@ -82,45 +120,19 @@ class UserList:
             return
 
         try:
-            allLines = self.readAllLines()
+            content = self._readFileContent()
+            if not content or len(content.strip()) == 0:
+                return
 
-            for line in allLines:
-                if len(line.strip()) == 0:
+            reader = csv.reader(io.StringIO(content))
+            for lineNum, row in enumerate(reader, start=1):
+                if not row or all(cell.strip() == "" for cell in row):
                     continue
-                item = line.split(",")
-                if len(item) < 4:
-                    print(f"解析错误 [{line}]")
-                    continue
-                if (
-                    len(item[0].strip()) > 0
-                    and len(item[1].strip()) > 0
-                    and len(item[3].strip()) > 0
-                ):
-                    if item[0].strip() in self.userNameSet:
-                        print(
-                            f"发现重复的用户名条目 [{item[0].strip()}], 已跳过此内容 [{line}]"
-                        )
-                    elif not os.path.exists(item[3].strip()):
-                        print(
-                            f"该用户名条目 [{item[0].strip()}] 的路径不存在或无访问权限 [{item[3].strip()}] 已跳过此内容 [{line}]"
-                        )
-                    elif item[0].strip() != "anonymous" and len(item[2].strip()) == 0:
-                        print(
-                            f"该用户名条目 [{item[0].strip()}] 没有密码(只有匿名用户 anonymous 可以不设密码)，已跳过此内容 [{line}]"
-                        )
-                    else:
-                        self.userNameSet.add(item[0].strip())
-                        self.userList.append(
-                            UserNode(
-                                item[0].strip(),
-                                Settings.Settings.encry2sha256(item[1].strip()),
-                                permConvert(item[2].strip()),
-                                item[3].strip().replace('"', ""),
-                            )
-                        )
-                else:
-                    print(f"解析错误 [{line}]")
-                    continue
+                rawLine = ",".join(row)
+                node = self._validateRow(row, lineNum, rawLine)
+                if node is not None:
+                    self.userNameSet.add(node.userName)
+                    self.userList.append(node)
 
         except Exception as e:
             print(f"用户列表文件读取异常: {self.userListCsvPath}\n{e}")
