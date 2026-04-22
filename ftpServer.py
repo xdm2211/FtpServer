@@ -416,7 +416,7 @@ def startServer():
             logger.warning("警告：当前允许【匿名用户】登录，且拥有【写入、修改】文件权限，请谨慎对待。")
             logger.warning("若是安全的内网环境可忽略以上警告，否则【匿名用户】应当选择【只读】权限。")
 
-    tipsStr, ftpUrlList = getTipsAndUrlList()
+    tipsStr, ftpUrlList, isIPv4Supported, isIPv6Supported = getTipsAndUrlList()
 
     if len(ftpUrlList) == 0:
         tips: str = "!!! 本机没有检测到网络IP, 请检查端口设置或网络连接, 或稍后重试 !!!"
@@ -795,10 +795,11 @@ def logThreadFun():
         loggingWidget.configure(state=tk.DISABLED)
 
 
-def getTipsAndUrlList():
+def getTipsAndUrlList() -> tuple[str, list, bool, bool]:
+    """
+    获取 FTP 服务器的提示信息与 FTP URL 列表，同时判断是否支持 IPv4 与 IPv6
+    """
     global settings
-    global isIPv4Supported
-    global isIPv6Supported
     global tipsTitle
 
     addrs = socket.getaddrinfo(socket.gethostname(), None)
@@ -843,12 +844,9 @@ def getTipsAndUrlList():
             else:
                 IPv4IPstr += f"\n[IPv4 公网] {fullUrl}"
 
-    isIPv4Supported = len(IPv4FtpUrlList) > 0
-    isIPv6Supported = len(IPv6FtpUrlList) > 0
-
     ftpUrlList = IPv4FtpUrlList + IPv6FtpUrlList
     tipsStr = tipsTitle + IPv4IPstr + IPv6IPstr
-    return tipsStr, ftpUrlList
+    return tipsStr, ftpUrlList, len(IPv4FtpUrlList) > 0, len(IPv6FtpUrlList) > 0
 
 
 def find_and_activate_window() -> bool:
@@ -917,6 +915,8 @@ def main():
     global directoryCombobox
     global userNameEntry
     global userPasswordEntry
+    global isIPv4Supported
+    global isIPv6Supported
 
     global userNameVar
     global userPasswordVar
@@ -1103,7 +1103,7 @@ def main():
     isReadOnlyVar.set(settings.isReadOnly)
     isAutoStartServerVar.set(settings.isAutoStartServer)
 
-    tipsStr, ftpUrlList = getTipsAndUrlList()
+    tipsStr, ftpUrlList, isIPv4Supported, isIPv6Supported = getTipsAndUrlList()
     tipsTextWidget.insert(tk.INSERT, tipsStr)
     tipsTextWidget.configure(state=tk.DISABLED)
 
