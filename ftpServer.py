@@ -256,6 +256,11 @@ def deleteCurrentComboboxItem():
         directoryCombobox.current(0)
 
 
+def _onPasswordChanged():
+    global isPasswordModified
+    isPasswordModified = True
+
+
 def updateSettingVars():
     global settings
     global directoryCombobox
@@ -268,6 +273,7 @@ def updateSettingVars():
     global isAutoStartServerVar
     global isIPv4Supported
     global isIPv6Supported
+    global isPasswordModified
 
     settings.directoryList = list(directoryCombobox["value"])
     if len(settings.directoryList) > 0:
@@ -287,13 +293,13 @@ def updateSettingVars():
     settings.isAutoStartServer = isAutoStartServerVar.get()
 
     passwordTmp = userPasswordVar.get()
-    if len(passwordTmp) == 0:
-        settings.userPassword = ""
-    elif passwordTmp == "******":
-        pass
-    else:
-        settings.userPassword = Settings.Settings.encry2sha256(passwordTmp)
-        userPasswordVar.set("******")
+    if isPasswordModified:
+        if len(passwordTmp) == 0:
+            settings.userPassword = ""
+        else:
+            settings.userPassword = Settings.Settings.encry2sha256(passwordTmp)
+            userPasswordVar.set("******")
+        isPasswordModified = False
 
     try:
         IPv4PortInt = 0 if IPv4PortVar.get() == "" else int(IPv4PortVar.get())
@@ -948,6 +954,7 @@ def main():
     global isReadOnlyVar
     global isGBKVar
     global isAutoStartServerVar
+    global isPasswordModified
     global mutex_handle
     global logger
 
@@ -1119,7 +1126,9 @@ def main():
     directoryCombobox.current(0)
 
     userNameVar.set(settings.userName)
+    isPasswordModified = False
     userPasswordVar.set("******" if len(settings.userPassword) > 0 else "")
+    userPasswordVar.trace_add("write", lambda *_: _onPasswordChanged())
     IPv4PortVar.set("" if settings.IPv4Port == 0 else str(settings.IPv4Port))
     IPv6PortVar.set("" if settings.IPv6Port == 0 else str(settings.IPv6Port))
     isGBKVar.set(settings.isGBK)
