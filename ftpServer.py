@@ -479,6 +479,8 @@ def startServer():
         userList.print()
         logger.info(f"编码: {'GBK' if settings.isGBK else 'UTF-8'}\n")
 
+    setConfigWidgetsState(tk.DISABLED)
+
 
 def serverThreadFun(IP_Family: str):
     global settings
@@ -571,6 +573,19 @@ def closeServer():
             serverV6.close_all()
             serverThreadV6.join()
         logger.info("IPv6服务线程已关闭")
+
+    setConfigWidgetsState(tk.NORMAL)
+
+
+def setConfigWidgetsState(state: str):
+    for w in (
+        userNameEntry, userPasswordEntry,
+        IPv4PortEntry, IPv6PortEntry,
+        encodingUtf8Radio, encodingGbkRadio,
+        permReadWriteRadio, permReadOnlyRadio,
+        directoryCombobox, pickDirButton, deleteDirButton,
+    ):
+        w.configure(state=state)
 
 
 def pickDirectory():
@@ -913,8 +928,16 @@ def main():
     global tipsTextWidget
     global tipsTextWidgetRightClickMenu
     global directoryCombobox
+    global pickDirButton
+    global deleteDirButton
     global userNameEntry
     global userPasswordEntry
+    global IPv4PortEntry
+    global IPv6PortEntry
+    global encodingUtf8Radio
+    global encodingGbkRadio
+    global permReadWriteRadio
+    global permReadOnlyRadio
     global isIPv4Supported
     global isIPv6Supported
 
@@ -991,16 +1014,14 @@ def main():
         side=tk.LEFT, padx=(0, scale(10))
     )
 
-    ttk.Button(frame1, text="选择目录", command=pickDirectory).pack(
-        side=tk.LEFT, padx=(0, scale(10))
-    )
+    pickDirButton = ttk.Button(frame1, text="选择目录", command=pickDirectory)
+    pickDirButton.pack(side=tk.LEFT, padx=(0, scale(10)))
 
     directoryCombobox = ttk.Combobox(frame1, width=0)
     directoryCombobox.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-    ttk.Button(frame1, text="X", command=deleteCurrentComboboxItem, width=0).pack(
-        side=tk.LEFT, padx=(0, scale(10))
-    )
+    deleteDirButton = ttk.Button(frame1, text="X", command=deleteCurrentComboboxItem, width=0)
+    deleteDirButton.pack(side=tk.LEFT, padx=(0, scale(10)))
 
     ttk.Button(frame1, text="帮助", command=showHelp, width=-4).pack(
         side=tk.LEFT, padx=(0, scale(5))
@@ -1035,37 +1056,39 @@ def main():
         row=0, column=0, pady=(0, scale(5)), padx=(0, scale(5))
     )
     IPv4PortVar = tk.StringVar()
-    ttk.Entry(portFrame, textvariable=IPv4PortVar, width=6).grid(
-        row=0, column=1, pady=(0, scale(5))
-    )
+    IPv4PortEntry = ttk.Entry(portFrame, textvariable=IPv4PortVar, width=6)
+    IPv4PortEntry.grid(row=0, column=1, pady=(0, scale(5)))
 
     ttk.Label(portFrame, text="IPv6端口").grid(row=1, column=0, padx=(0, scale(5)))
     IPv6PortVar = tk.StringVar()
-    ttk.Entry(portFrame, textvariable=IPv6PortVar, width=6).grid(row=1, column=1)
+    IPv6PortEntry = ttk.Entry(portFrame, textvariable=IPv6PortVar, width=6)
+    IPv6PortEntry.grid(row=1, column=1)
 
     encodingFrame = ttk.Frame(frame2)
     encodingFrame.pack(side=tk.LEFT, padx=(0, scale(10)), fill=tk.Y)
     encodingFrame.grid_rowconfigure((0, 1), weight=1)
 
     isGBKVar = tk.BooleanVar()
-    ttk.Radiobutton(
+    encodingUtf8Radio = ttk.Radiobutton(
         encodingFrame, text="UTF-8 编码", variable=isGBKVar, value=False
-    ).grid(row=0, column=0, sticky=tk.EW, pady=(0, scale(5)))
-    ttk.Radiobutton(encodingFrame, text="GBK 编码", variable=isGBKVar, value=True).grid(
-        row=1, column=0, sticky=tk.EW
     )
+    encodingUtf8Radio.grid(row=0, column=0, sticky=tk.EW, pady=(0, scale(5)))
+    encodingGbkRadio = ttk.Radiobutton(encodingFrame, text="GBK 编码", variable=isGBKVar, value=True)
+    encodingGbkRadio.grid(row=1, column=0, sticky=tk.EW)
 
     permissionFrame = ttk.Frame(frame2)
     permissionFrame.pack(side=tk.LEFT, padx=(0, scale(10)), fill=tk.Y)
     permissionFrame.grid_rowconfigure((0, 1), weight=1)
 
     isReadOnlyVar = tk.BooleanVar()
-    ttk.Radiobutton(
+    permReadWriteRadio = ttk.Radiobutton(
         permissionFrame, text="读写", variable=isReadOnlyVar, value=False
-    ).grid(row=0, column=0, sticky=tk.EW, pady=(0, scale(5)))
-    ttk.Radiobutton(
+    )
+    permReadWriteRadio.grid(row=0, column=0, sticky=tk.EW, pady=(0, scale(5)))
+    permReadOnlyRadio = ttk.Radiobutton(
         permissionFrame, text="只读", variable=isReadOnlyVar, value=True
-    ).grid(row=1, column=0, sticky=tk.EW)
+    )
+    permReadOnlyRadio.grid(row=1, column=0, sticky=tk.EW)
 
     isAutoStartServerVar = tk.BooleanVar()
     ttk.Checkbutton(
