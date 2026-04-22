@@ -50,39 +50,30 @@ class Settings:
             self.isAutoStartServer = variables.get("isAutoStartServer", False)
 
             # 检查变量类型
-            if not type(self.directoryList) is list:
+            if not isinstance(self.directoryList, list):
                 self.directoryList = [self.appDirectory]
                 print(f"directoryList 类型错误，已恢复默认：[{self.appDirectory}]")
-            if not type(self.userName) is str:
+            if not isinstance(self.userName, str):
                 self.userName = Settings.defaultUserName
                 print(f"userName 类型错误，已恢复默认：{self.userName}")
-            if not type(self.userPassword) is str:
+            if not isinstance(self.userPassword, str):
                 self.userPassword = self.encry2sha256(Settings.defaultUserPassword)
                 print(f"userPassword 类型错误，已恢复默认：{self.userPassword}")
-            if not type(self.IPv4Port) is int:
+            if not isinstance(self.IPv4Port, int):
                 self.IPv4Port = 21
                 print(f"IPv4Port 类型错误，已恢复默认：{self.IPv4Port}")
-            if not type(self.IPv6Port) is int:
+            if not isinstance(self.IPv6Port, int):
                 self.IPv6Port = 0
                 print(f"IPv6Port 类型错误，已恢复默认：{self.IPv6Port}")
-            if not type(self.isGBK) is bool:
+            if not isinstance(self.isGBK, bool):
                 self.isGBK = True
                 print(f"isGBK 类型错误，已恢复默认：{self.isGBK}")
-            if not type(self.isReadOnly) is bool:
+            if not isinstance(self.isReadOnly, bool):
                 self.isReadOnly = True
                 print(f"isReadOnly 类型错误，已恢复默认：{self.isReadOnly}")
-            if not type(self.isAutoStartServer) is bool:
+            if not isinstance(self.isAutoStartServer, bool):
                 self.isAutoStartServer = False
-                print(
-                    f"isAutoStartServer 类型错误，已恢复默认：{self.isAutoStartServer}"
-                )
-
-            # 旧版(v1.12及以下) 存储的是明文密码
-            if len(self.userPassword) > 0 and not self.userPassword.startswith(
-                Settings.encryPasswordPrefix
-            ):
-                self.userPassword = self.encry2sha256(self.userPassword)
-                self.save()
+                print(f"isAutoStartServer 类型错误，已恢复默认：{self.isAutoStartServer}")
 
         except Exception as e:
             print(f"设置文件读取异常: {self.savePath}\n{e}")
