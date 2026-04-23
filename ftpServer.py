@@ -857,7 +857,10 @@ def getTipsAndUrlList() -> tuple[str, list, bool, bool]:
     global settings
     global tipsTitle
 
-    addrs = socket.getaddrinfo(socket.gethostname(), None)
+    try:
+        addrs = socket.getaddrinfo(socket.gethostname(), None)
+    except Exception:
+        addrs = [(socket.AF_INET, None, None, None, ('127.0.0.1', None))]
 
     IPv4IPstr = ""
     IPv6IPstr = ""
