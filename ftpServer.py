@@ -784,13 +784,14 @@ def removeTlsCert():
     global certFilePath
     global keyFilePath
 
-    try:
-        os.remove(certFilePath)
-        os.remove(keyFilePath)
-        logger.info(f"已移除 TLS/SSL 证书: {certFilePath}")
-        logger.info(f"已移除 TLS/SSL 密钥: {keyFilePath}")
-    except Exception as e:
-        logger.error(f"移除 TLS/SSL 证书失败: {e}")
+    for path, name in [(certFilePath, "证书"), (keyFilePath, "密钥")]:
+        try:
+            os.remove(path)
+            logger.info(f"已移除 TLS/SSL {name}: {path}")
+        except FileNotFoundError:
+            logger.warning(f"TLS/SSL {name}不存在，无需移除: {path}")
+        except Exception as e:
+            logger.error(f"移除 TLS/SSL {name}失败: {e}")
 
 
 def logThreadFun():
