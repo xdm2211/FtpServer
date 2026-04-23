@@ -67,7 +67,7 @@ windowsTitle = f"{appLabel} {appVersion}"
 tipsTitle = "若用户名空白则默认匿名访问(anonymous)。若中文乱码则需更换编码方式, 再重启服务。若无需开启IPv6只需将其端口留空即可, IPv4同理。请设置完后再开启服务。若需FTPS或多用户配置, 请点击“帮助”按钮查看使用说明。以下为本机所有IP地址(含所有物理网卡/虚拟网卡), 右键可复制。\n"
 
 logMsg = queue.Queue()
-logThreadrunning: bool = True
+isLogThreadRunning: bool = True
 logMsgBackup: list[str] = []
 
 permReadOnly: str = UserList.PERM_READ_ONLY
@@ -98,7 +98,7 @@ def showHelp():
 
 ==== FTPS 配置 ====
 
-本软件默认使用 FTP 明文传输数据，如果数据比较敏感，或者网络环境不安全，则可以按以下步骤开启 FTPS 加密传输数据。
+本软件默认使用 FTP 明文传输数据，如果数据比较敏感，或者网络环境不安全，则可以按以下步骤启用 FTPS 加密传输数据。
 
 只需生成TLS/SSL证书文件即可启用 "FTPS [TLS/SSL显式加密, TLSv1.3]"，以下两种方式均可:
 
@@ -108,7 +108,7 @@ def showHelp():
 
   openssl req -x509 -newkey rsa:2048 -keyout ftpServer.key -out ftpServer.crt -nodes -days 3653
 
-Windows文件管理器对 "显式FTPS" 支持不佳，推荐使用开源客户端软件 [WinSCP](https://winscp.net/eng/index.php)，对 FTPS 支持比较好。开启 FTPS 加密传输后，会 "影响传输性能"，最大传输速度会降到 "50MiB/s" 左右。若对网络安全没那么高要求，不建议加密。
+Windows文件管理器对 "显式FTPS" 支持不佳，推荐使用开源客户端软件 [WinSCP](https://winscp.net/eng/index.php)，对 FTPS 支持比较好。启用 FTPS 加密传输后，会 "影响传输性能"，最大传输速度会降到 "50MiB/s" 左右。若对网络安全没那么高要求，不建议加密。
 
 
 ==== 多用户配置 ====
@@ -334,7 +334,7 @@ def updateSettingVars():
         messagebox.showwarning(str(e), tips)
 
 
-class myStdout:  # 重定向输出
+class StdoutRedirector:  # 重定向输出
     def __init__(self):
         sys.stdout = self
         sys.stderr = self
@@ -531,7 +531,7 @@ def serverThreadFun(IP_Family: str):
         handler.tls_control_required = True
         handler.tls_data_required = True
         logger.info(
-            "已加载 TLS/SSL 证书文件, 默认开启 FTPS [TLS/SSL显式加密, TLSv1.3]"
+            "已加载 TLS/SSL 证书文件, 默认启用 FTPS [TLS/SSL显式加密, TLSv1.3]"
         )
     else:
         handler = FTPHandler
@@ -551,7 +551,7 @@ def serverThreadFun(IP_Family: str):
             logger.error(f"IPv4服务异常: {e}")
         finally:
             isIPv4ThreadRunning.clear()
-            logger.info("IPv4服务已关闭")
+            logger.info("IPv4服务已停止")
     else:
         try:
             serverV6 = ThreadedFTPServer(("::", settings.IPv6Port), handler)
@@ -562,10 +562,10 @@ def serverThreadFun(IP_Family: str):
             logger.error(f"IPv6服务异常: {e}")
         finally:
             isIPv6ThreadRunning.clear()
-            logger.info("IPv6服务已关闭")
+            logger.info("IPv6服务已停止")
 
 
-def closeServer():
+def stopServer():
     global settings
     global serverV4
     global serverV6
@@ -578,17 +578,17 @@ def closeServer():
 
     if isIPv4Supported and settings.IPv4Port > 0:
         if isIPv4ThreadRunning.is_set():
-            logger.info("IPv4服务线程正在关闭...")
+            logger.info("IPv4服务线程正在停止...")
             serverV4.close_all()
             serverThreadV4.join()
-        logger.info("IPv4服务线程已关闭")
+        logger.info("IPv4服务线程已停止")
 
     if isIPv6Supported and settings.IPv6Port > 0:
         if isIPv6ThreadRunning.is_set():
-            logger.info("IPv6服务线程正在关闭...")
+            logger.info("IPv6服务线程正在停止...")
             serverV6.close_all()
             serverThreadV6.join()
-        logger.info("IPv6服务线程已关闭")
+        logger.info("IPv6服务线程已停止")
 
     setConfigWidgetsState(tk.NORMAL)
 
@@ -640,7 +640,7 @@ def hideWindow():
 def handleExit(strayIcon):
     global settings
     global mainWindow
-    global logThreadrunning
+    global isLogThreadRunning
     global logThread
     global mutex_handle
 
@@ -653,12 +653,12 @@ def handleExit(strayIcon):
     updateSettingVars()
     settings.save()
 
-    closeServer()
+    stopServer()
     strayIcon.visible = False
     strayIcon.stop()
 
     logger.info("等待日志线程退出...")
-    logThreadrunning = False
+    isLogThreadRunning = False
     logThread.join()
 
     mainWindow.destroy()
@@ -820,10 +820,10 @@ def flushLogToWidget(pending: list[str]):
 
 
 def logThreadFun():
-    global logThreadrunning
+    global isLogThreadRunning
     global mainWindow
 
-    while logThreadrunning:
+    while isLogThreadRunning:
         try:
             logInfo = logMsg.get(timeout=0.2)
         except queue.Empty:
@@ -993,7 +993,7 @@ def main():
     # 告诉操作系统使用程序自身的dpi适配
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
-    mystd = myStdout()  # 实例化重定向类
+    stdoutRedirectorObj = StdoutRedirector()  # 实例化重定向类
     logThread = threading.Thread(target=logThreadFun)
     logThread.start()
 
@@ -1043,7 +1043,7 @@ def main():
 
     startButton = ttk.Button(frame1, text="开启", command=startServer)
     startButton.pack(side=tk.LEFT, padx=(0, scale(10)))
-    ttk.Button(frame1, text="关闭", command=closeServer).pack(
+    ttk.Button(frame1, text="停止", command=stopServer).pack(
         side=tk.LEFT, padx=(0, scale(10))
     )
 
