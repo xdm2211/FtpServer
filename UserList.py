@@ -5,6 +5,10 @@ import Settings
 import myUtils
 
 
+PERM_READ_ONLY: str = "elr"
+PERM_READ_WRITE: str = "elradfmwMT"
+
+
 class UserNode:
     def __init__(self, userName: str, password: str, perm: str, path: str) -> None:
         self.userName = userName
@@ -14,9 +18,9 @@ class UserNode:
 
 
 def permTranslate(perm: str) -> str:
-    if perm == "elr":
+    if perm == PERM_READ_ONLY:
         return "只读"
-    elif perm == "elradfmwMT":
+    elif perm == PERM_READ_WRITE:
         return "读写"
     else:
         return perm
@@ -40,19 +44,16 @@ def permConvert(permInput: str) -> str:
     - "T" = 更新文件上次修改时间 (MFMT 命令)
     """
 
-    readOnlyPerm = "elr"
-    readwritePerm = "elradfmwMT"
-
     if permInput.lower() == "readonly" or permInput == "只读":
-        return readOnlyPerm
+        return PERM_READ_ONLY
     elif permInput.lower() == "readwrite" or permInput == "读写":
-        return readwritePerm
+        return PERM_READ_WRITE
     else:
-        charSet = {c for c in permInput if c in readwritePerm}
+        charSet = {c for c in permInput if c in PERM_READ_WRITE}
         if len(charSet) == 0:
-            return readOnlyPerm
+            return PERM_READ_ONLY
         else:
-            return "".join(c for c in readwritePerm if c in charSet)
+            return "".join(c for c in PERM_READ_WRITE if c in charSet)
 
 
 class UserList:

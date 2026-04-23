@@ -69,8 +69,8 @@ tipsTitle = "若用户名空白则默认匿名访问(anonymous)。若中文乱�
 logMsg = queue.Queue()
 logThreadrunning: bool = True
 
-permReadOnly: str = "elr"
-permReadWrite: str = "elradfmwMT"
+permReadOnly: str = UserList.PERM_READ_ONLY
+permReadWrite: str = UserList.PERM_READ_WRITE
 
 isIPv4Supported: bool = False
 isIPv6Supported: bool = False
