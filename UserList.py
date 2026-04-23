@@ -9,7 +9,7 @@ PERM_READ_ONLY: str = "elr"
 PERM_READ_WRITE: str = "elradfmwMT"
 
 
-class UserNode:
+class UserConfig:
     def __init__(self, userName: str, password: str, perm: str, path: str) -> None:
         self.userName = userName
         self.password = password
@@ -60,21 +60,22 @@ class UserList:
     def __init__(self) -> None:
         self.appDirectory = myUtils.getAppDirectory()
         self.userListCsvPath = os.path.join(self.appDirectory, "FtpServerUserList.csv")
-        self.userList: list[UserNode] = list()
-        self.userNameSet: set[str] = set()
+        self.userList: list[UserConfig] = list[UserConfig]()
+        self.userNameSet: set[str] = set[str]()
         self.load()
 
     def _readFileContent(self) -> str:
         for encoding in ['utf-8-sig', 'gbk']:
             try:
                 with open(self.userListCsvPath, 'r', encoding=encoding) as file:
-                    return file.read()
+                    content = file.read()
+                return content
             except (UnicodeDecodeError, ValueError):
                 continue
         print(f"无法使用UTF-8或GBK编码读取文件 {self.userListCsvPath}")
         return ""
 
-    def _validateRow(self, row: list[str], lineNum: int, rawLine: str) -> UserNode | None:
+    def _validateRow(self, row: list[str], lineNum: int, rawLine: str) -> UserConfig | None:
         if len(row) < 4:
             print(f"第{lineNum}行 解析错误(列数不足) [{rawLine}]")
             return None
@@ -106,7 +107,7 @@ class UserList:
                   f"(只有匿名用户 anonymous 可以不设密码)，已跳过此内容 [{rawLine}]")
             return None
 
-        return UserNode(
+        return UserConfig(
             userName,
             Settings.Settings.encry2sha256(password),
             permConvert(permInput),
