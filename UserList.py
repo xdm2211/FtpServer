@@ -63,8 +63,8 @@ class UserList:
     def __init__(self) -> None:
         self.appDirectory = myUtils.getAppDirectory()
         self.userListCsvPath = os.path.join(self.appDirectory, "FtpServerUserList.csv")
-        self.userList: list[UserConfig] = list[UserConfig]()
-        self.userNameSet: set[str] = set[str]()
+        self.userList: list[UserConfig] = []
+        self.userNameSet: set[str] = set()
         self.load()
 
     def readFileContent(self) -> str:
