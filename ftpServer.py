@@ -482,7 +482,7 @@ def startServer():
             )
         )
     else:
-        userList.print()
+        userList.printUserList()
         logger.info(f"编码: {'GBK' if settings.isGBK else 'UTF-8'}\n")
 
     setConfigWidgetsState(tk.DISABLED)
@@ -1120,7 +1120,7 @@ def main():
     settings = Settings.Settings()
     userList = UserList.UserList()
     if not userList.isEmpty():
-        userList.print()
+        userList.printUserList()
 
     directoryCombobox["value"] = tuple(settings.directoryList)
     directoryCombobox.current(0)

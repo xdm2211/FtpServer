@@ -1,6 +1,12 @@
-import os, sys, json, hashlib
+import os
+import sys
+import json
+import hashlib
+import logging
 import myUtils
 from typing import Any
+
+logger = logging.getLogger("ftpserver")
 
 class Settings:
     encryPasswordPrefix = "ENCRY"
@@ -52,31 +58,31 @@ class Settings:
             # 检查变量类型
             if not isinstance(self.directoryList, list):
                 self.directoryList = [self.appDirectory]
-                print(f"directoryList 类型错误，已恢复默认：[{self.appDirectory}]")
+                logger.warning(f"directoryList 类型错误，已恢复默认：[{self.appDirectory}]")
             if not isinstance(self.userName, str):
                 self.userName = Settings.defaultUserName
-                print(f"userName 类型错误，已恢复默认：{self.userName}")
+                logger.warning(f"userName 类型错误，已恢复默认：{self.userName}")
             if not isinstance(self.userPassword, str):
                 self.userPassword = self.encry2sha256(Settings.defaultUserPassword)
-                print(f"userPassword 类型错误，已恢复默认：{self.userPassword}")
+                logger.warning(f"userPassword 类型错误，已恢复默认：{self.userPassword}")
             if not isinstance(self.IPv4Port, int):
                 self.IPv4Port = 21
-                print(f"IPv4Port 类型错误，已恢复默认：{self.IPv4Port}")
+                logger.warning(f"IPv4Port 类型错误，已恢复默认：{self.IPv4Port}")
             if not isinstance(self.IPv6Port, int):
                 self.IPv6Port = 0
-                print(f"IPv6Port 类型错误，已恢复默认：{self.IPv6Port}")
+                logger.warning(f"IPv6Port 类型错误，已恢复默认：{self.IPv6Port}")
             if not isinstance(self.isGBK, bool):
                 self.isGBK = True
-                print(f"isGBK 类型错误，已恢复默认：{self.isGBK}")
+                logger.warning(f"isGBK 类型错误，已恢复默认：{self.isGBK}")
             if not isinstance(self.isReadOnly, bool):
                 self.isReadOnly = True
-                print(f"isReadOnly 类型错误，已恢复默认：{self.isReadOnly}")
+                logger.warning(f"isReadOnly 类型错误，已恢复默认：{self.isReadOnly}")
             if not isinstance(self.isAutoStartServer, bool):
                 self.isAutoStartServer = False
-                print(f"isAutoStartServer 类型错误，已恢复默认：{self.isAutoStartServer}")
+                logger.warning(f"isAutoStartServer 类型错误，已恢复默认：{self.isAutoStartServer}")
 
         except Exception as e:
-            print(f"设置文件读取异常: {self.savePath}\n{e}")
+            logger.error(f"设置文件读取异常: {self.savePath}\n{e}")
             return
 
     def save(self):
@@ -98,5 +104,5 @@ class Settings:
             with open(self.savePath, "w", encoding="utf-8") as file:
                 json.dump(variables, file, ensure_ascii=False, indent=4)
         except Exception as e:
-            print(f"设置文件保存异常: {self.savePath}\n{e}")
+            logger.error(f"设置文件保存异常: {self.savePath}\n{e}")
             return

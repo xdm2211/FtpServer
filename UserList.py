@@ -1,8 +1,11 @@
 import csv
 import io
+import logging
 import os
 import Settings
 import myUtils
+
+logger = logging.getLogger("ftpserver")
 
 
 PERM_READ_ONLY: str = "elr"
@@ -72,12 +75,12 @@ class UserList:
                 return content
             except (UnicodeDecodeError, ValueError):
                 continue
-        print(f"无法使用UTF-8或GBK编码读取文件 {self.userListCsvPath}")
+        logger.warning(f"无法使用UTF-8或GBK编码读取文件 {self.userListCsvPath}")
         return ""
 
     def _validateRow(self, row: list[str], lineNum: int, rawLine: str) -> UserConfig | None:
         if len(row) < 4:
-            print(f"第{lineNum}行 解析错误(列数不足) [{rawLine}]")
+            logger.warning(f"第{lineNum}行 解析错误(列数不足) [{rawLine}]")
             return None
 
         userName = row[0].strip()
@@ -87,23 +90,23 @@ class UserList:
 
         if not userName or not password or not rootPath:
             if userName and not password and userName != "anonymous":
-                print(f"第{lineNum}行 该用户名条目 [{userName}] 没有密码"
+                logger.warning(f"第{lineNum}行 该用户名条目 [{userName}] 没有密码"
                       f"(只有匿名用户 anonymous 可以不设密码)，已跳过此内容 [{rawLine}]")
                 return None
             if not userName or not rootPath:
-                print(f"第{lineNum}行 解析错误(用户名或路径为空) [{rawLine}]")
+                logger.warning(f"第{lineNum}行 解析错误(用户名或路径为空) [{rawLine}]")
                 return None
 
         if userName in self.userNameSet:
-            print(f"第{lineNum}行 发现重复的用户名条目 [{userName}], 已跳过此内容 [{rawLine}]")
+            logger.warning(f"第{lineNum}行 发现重复的用户名条目 [{userName}], 已跳过此内容 [{rawLine}]")
             return None
 
         if not os.path.exists(rootPath):
-            print(f"第{lineNum}行 该用户名条目 [{userName}] 的路径不存在或无访问权限 [{rootPath}] 已跳过此内容 [{rawLine}]")
+            logger.warning(f"第{lineNum}行 该用户名条目 [{userName}] 的路径不存在或无访问权限 [{rootPath}] 已跳过此内容 [{rawLine}]")
             return None
 
         if userName != "anonymous" and not password:
-            print(f"第{lineNum}行 该用户名条目 [{userName}] 没有密码"
+            logger.warning(f"第{lineNum}行 该用户名条目 [{userName}] 没有密码"
                   f"(只有匿名用户 anonymous 可以不设密码)，已跳过此内容 [{rawLine}]")
             return None
 
@@ -137,19 +140,18 @@ class UserList:
                     self.userList.append(node)
 
         except Exception as e:
-            print(f"用户列表文件读取异常: {self.userListCsvPath}\n{e}")
+            logger.error(f"用户列表文件读取异常: {self.userListCsvPath}\n{e}")
             return
 
-    def print(self):
+    def printUserList(self):
         if len(self.userList) == 0:
-            print("用户列表空白")
+            logger.info("用户列表空白")
         else:
-            print(f"主页面的用户/密码设置将会忽略，现将使用以下{len(self.userList)}条用户配置:")
+            logger.info(f"主页面的用户/密码/权限/根路径将会忽略，现将使用以下{len(self.userList)}条用户配置:")
             for userItem in self.userList:
-                print(
+                logger.info(
                     f"[{userItem.userName}] [******] [{permTranslate(userItem.perm)}] [{userItem.path}]"
                 )
-            print('')
 
     def isEmpty(self) -> bool:
         return len(self.userList) == 0
