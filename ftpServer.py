@@ -68,6 +68,7 @@ tipsTitle = "若用户名空白则默认匿名访问(anonymous)。若中文乱�
 
 logMsg = queue.Queue()
 logThreadrunning: bool = True
+logMsgBackup: list[str] = []
 
 permReadOnly: str = UserList.PERM_READ_ONLY
 permReadWrite: str = UserList.PERM_READ_WRITE
@@ -257,7 +258,7 @@ def deleteCurrentComboboxItem():
         directoryCombobox.current(0)
 
 
-def _onPasswordChanged():
+def onPasswordChanged():
     global isPasswordModified
     isPasswordModified = True
 
@@ -434,7 +435,7 @@ def startServer():
     settings.save()
 
     tipsTextWidget.configure(state=tk.NORMAL)
-    tipsTextWidget.delete("0.0", tk.END)
+    tipsTextWidget.delete("1.0", tk.END)
     tipsTextWidget.insert(tk.INSERT, tipsStr)
     tipsTextWidget.configure(state=tk.DISABLED)
 
@@ -802,28 +803,43 @@ def removeTlsCert():
             logger.error(f"移除 TLS/SSL {name}失败: {e}")
 
 
+def flushLogToWidget(pending: list[str]):
+    global loggingWidget
+    global logMsgBackup
+
+    loggingWidget.configure(state=tk.NORMAL)
+    logMsgBackup.extend(pending)
+    if len(logMsgBackup) > 200:
+        loggingWidget.delete("1.0", tk.END)
+        logMsgBackup = logMsgBackup[-50:]
+        loggingWidget.insert(tk.END, "".join(logMsgBackup))
+    else:
+        loggingWidget.insert(tk.END, "".join(pending))
+    loggingWidget.see(tk.END)
+    loggingWidget.configure(state=tk.DISABLED)
+
+
 def logThreadFun():
     global logThreadrunning
-    global loggingWidget
+    global mainWindow
 
-    logMsgBackup = []
     while logThreadrunning:
         try:
             logInfo = logMsg.get(timeout=0.2)
         except queue.Empty:
             continue
 
-        logMsgBackup.append(logInfo)
-        
-        loggingWidget.configure(state=tk.NORMAL)
-        if len(logMsgBackup) > 200:
-            loggingWidget.delete(0.0, tk.END)
-            logMsgBackup = logMsgBackup[-50:]
-            logInfo = "".join(logMsgBackup)
+        pending = [logInfo]
+        while not logMsg.empty():
+            try:
+                pending.append(logMsg.get_nowait())
+            except queue.Empty:
+                break
 
-        loggingWidget.insert(tk.END, logInfo)
-        loggingWidget.see(tk.END)
-        loggingWidget.configure(state=tk.DISABLED)
+        try:
+            mainWindow.after(0, flushLogToWidget, pending)
+        except Exception:
+            pass
 
 
 def getTipsAndUrlList() -> tuple[str, list, bool, bool]:
@@ -1138,7 +1154,7 @@ def main():
     userNameVar.set(settings.userName)
     isPasswordModified = False
     userPasswordVar.set("******" if len(settings.userPassword) > 0 else "")
-    userPasswordVar.trace_add("write", lambda *_: _onPasswordChanged())
+    userPasswordVar.trace_add("write", lambda *_: onPasswordChanged())
     IPv4PortVar.set("" if settings.IPv4Port == 0 else str(settings.IPv4Port))
     IPv6PortVar.set("" if settings.IPv6Port == 0 else str(settings.IPv6Port))
     isGBKVar.set(settings.isGBK)

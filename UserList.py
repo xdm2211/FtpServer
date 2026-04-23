@@ -67,7 +67,7 @@ class UserList:
         self.userNameSet: set[str] = set[str]()
         self.load()
 
-    def _readFileContent(self) -> str:
+    def readFileContent(self) -> str:
         for encoding in ['utf-8-sig', 'gbk']:
             try:
                 with open(self.userListCsvPath, 'r', encoding=encoding) as file:
@@ -78,7 +78,7 @@ class UserList:
         logger.warning(f"无法使用UTF-8或GBK编码读取文件 {self.userListCsvPath}")
         return ""
 
-    def _validateRow(self, row: list[str], lineNum: int, rawLine: str) -> UserConfig | None:
+    def validateRow(self, row: list[str], lineNum: int, rawLine: str) -> UserConfig | None:
         if len(row) < 4:
             logger.warning(f"第{lineNum}行 解析错误(列数不足) [{rawLine}]")
             return None
@@ -125,7 +125,7 @@ class UserList:
             return
 
         try:
-            content = self._readFileContent()
+            content = self.readFileContent()
             if not content or len(content.strip()) == 0:
                 return
 
@@ -134,7 +134,7 @@ class UserList:
                 if not row or all(cell.strip() == "" for cell in row):
                     continue
                 rawLine = ",".join(row)
-                node = self._validateRow(row, lineNum, rawLine)
+                node = self.validateRow(row, lineNum, rawLine)
                 if node is not None:
                     self.userNameSet.add(node.userName)
                     self.userList.append(node)
