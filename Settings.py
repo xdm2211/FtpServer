@@ -59,6 +59,11 @@ class Settings:
             if not isinstance(self.directoryList, list):
                 self.directoryList = [self.appDirectory]
                 logger.warning(f"directoryList 类型错误，已恢复默认：[{self.appDirectory}]")
+            else:
+                self.directoryList = [d for d in self.directoryList if isinstance(d, str) and d]
+                if not self.directoryList:
+                    self.directoryList = [self.appDirectory]
+                    logger.warning(f"directoryList 无有效条目，已恢复默认：[{self.appDirectory}]")
             if not isinstance(self.userName, str):
                 self.userName = Settings.defaultUserName
                 logger.warning(f"userName 类型错误，已恢复默认：{self.userName}")
