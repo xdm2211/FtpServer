@@ -541,19 +541,27 @@ def serverThreadFun(IP_Family: str):
     handler.permit_privileged_ports = True
 
     if IP_Family == "IPv4":
-        serverV4 = ThreadedFTPServer(("0.0.0.0", settings.IPv4Port), handler)
-        logger.info("IPv4服务开始运行")
-        isIPv4ThreadRunning.set()
-        serverV4.serve_forever()
-        isIPv4ThreadRunning.clear()
-        logger.info("IPv4服务已关闭")
+        try:
+            serverV4 = ThreadedFTPServer(("0.0.0.0", settings.IPv4Port), handler)
+            logger.info("IPv4服务开始运行")
+            isIPv4ThreadRunning.set()
+            serverV4.serve_forever()
+        except Exception as e:
+            logger.error(f"IPv4服务异常: {e}")
+        finally:
+            isIPv4ThreadRunning.clear()
+            logger.info("IPv4服务已关闭")
     else:
-        serverV6 = ThreadedFTPServer(("::", settings.IPv6Port), handler)
-        logger.info("IPv6服务开始运行")
-        isIPv6ThreadRunning.set()
-        serverV6.serve_forever()
-        isIPv6ThreadRunning.clear()
-        logger.info("IPv6服务已关闭")
+        try:
+            serverV6 = ThreadedFTPServer(("::", settings.IPv6Port), handler)
+            logger.info("IPv6服务开始运行")
+            isIPv6ThreadRunning.set()
+            serverV6.serve_forever()
+        except Exception as e:
+            logger.error(f"IPv6服务异常: {e}")
+        finally:
+            isIPv6ThreadRunning.clear()
+            logger.info("IPv6服务已关闭")
 
 
 def closeServer():
@@ -570,7 +578,7 @@ def closeServer():
     if isIPv4Supported and settings.IPv4Port > 0:
         if isIPv4ThreadRunning.is_set():
             logger.info("IPv4服务线程正在关闭...")
-            serverV4.close_all()  # 注意: 这也会关闭serverV6的所有连接
+            serverV4.close_all()
             serverThreadV4.join()
         logger.info("IPv4服务线程已关闭")
 
