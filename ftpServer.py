@@ -246,7 +246,7 @@ def deleteCurrentComboboxItem():
     currentValue = directoryCombobox.get()
 
     if currentValue in currentDirectoryList:
-        currentIdx = directoryCombobox.current(None)
+        currentIdx = directoryCombobox.current()
         currentDirectoryList.remove(currentValue)
         settings.directoryList = currentDirectoryList
         directoryCombobox["value"] = tuple(currentDirectoryList)
@@ -303,35 +303,43 @@ def updateSettingVars():
             userPasswordVar.set("******")
         isPasswordModified = False
 
-    try:
-        IPv4PortInt = 0 if IPv4PortVar.get() == "" else int(IPv4PortVar.get())
-        if 0 <= IPv4PortInt and IPv4PortInt < 65536:
-            settings.IPv4Port = IPv4PortInt
-        else:
-            raise ValueError("IPv4 端口值异常")
-    except ValueError as e:
-        tips: str = (
-            f"当前端口值: [ {IPv4PortVar.get()} ], 正常范围: 1 ~ 65535, 已重设为: 21"
-        )
-        settings.IPv4Port = 21
-        IPv4PortVar.set("21")
-        logger.warning(tips)
-        messagebox.showwarning(str(e), tips)
+    portStr = IPv4PortVar.get().strip()
+    if len(portStr) == 0:
+        settings.IPv4Port = 0
+    else:
+        try:
+            IPv4PortInt = int(portStr)
+            if 1 <= IPv4PortInt and IPv4PortInt < 65536:
+                settings.IPv4Port = IPv4PortInt
+            else:
+                raise ValueError("IPv4 端口值异常")
+        except ValueError as e:
+            tips: str = (
+                f"当前端口值: [ {portStr} ], 正常范围: 1 ~ 65535, 已重设为: 21"
+            )
+            settings.IPv4Port = 21
+            IPv4PortVar.set("21")
+            logger.warning(tips)
+            messagebox.showwarning(str(e), tips)
 
-    try:
-        IPv6PortInt = 0 if IPv6PortVar.get() == "" else int(IPv6PortVar.get())
-        if 0 <= IPv6PortInt and IPv6PortInt < 65536:
-            settings.IPv6Port = IPv6PortInt
-        else:
-            raise ValueError("IPv6 端口值异常")
-    except ValueError as e:
-        tips: str = (
-            f"当前端口值: [ {IPv6PortVar.get()} ], 正常范围: 1 ~ 65535, 已重设为: 21"
-        )
-        settings.IPv6Port = 21
-        IPv6PortVar.set("21")
-        logger.warning(tips)
-        messagebox.showwarning(str(e), tips)
+    portStr = IPv6PortVar.get().strip()
+    if len(portStr) == 0:
+        settings.IPv6Port = 0
+    else:
+        try:
+            IPv6PortInt = int(portStr)
+            if 1 <= IPv6PortInt and IPv6PortInt < 65536:
+                settings.IPv6Port = IPv6PortInt
+            else:
+                raise ValueError("IPv6 端口值异常")
+        except ValueError as e:
+            tips: str = (
+                f"当前端口值: [ {portStr} ], 正常范围: 1 ~ 65535, 已重设为: 21"
+            )
+            settings.IPv6Port = 21
+            IPv6PortVar.set("21")
+            logger.warning(tips)
+            messagebox.showwarning(str(e), tips)
 
 
 class StdoutRedirector:  # 重定向输出
