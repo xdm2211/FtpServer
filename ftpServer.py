@@ -77,8 +77,9 @@ isIPv6Supported: bool = False
 isIPv4ThreadRunning = threading.Event()
 isIPv6ThreadRunning = threading.Event()
 
-certFilePath: str = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "ftpServer.crt")
-keyFilePath: str = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "ftpServer.key")
+appDirectory: str = myUtils.getAppDirectory()
+certFilePath: str = os.path.join(appDirectory, "ftpServer.crt")
+keyFilePath: str = os.path.join(appDirectory, "ftpServer.key")
 
 ScaleFactor:int = 100
 mutex_handle:int = 0

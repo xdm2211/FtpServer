@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 
 
 def getAppDirectory() -> str:
-    appDirectory = str(os.path.dirname(sys.argv[0])).replace("\\", "/")
+    appDirectory = str(os.path.dirname(os.path.abspath(sys.argv[0]))).replace("\\", "/")
     if (
         len(appDirectory) > 2
         and appDirectory[0].islower()
