@@ -11,7 +11,7 @@ logger = logging.getLogger("ftpserver")
 class Settings:
     encryPasswordPrefix = "ENCRY"
     defaultUserName = "JARK006"
-    defaultUserPassword = "123456"
+    defaultUserPassword = ""
 
     def __init__(self) -> None:
         self.appDirectory = myUtils.getAppDirectory()
@@ -20,7 +20,7 @@ class Settings:
 
         self.directoryList: list[str] = [self.appDirectory]
         self.userName: str = Settings.defaultUserName
-        self.userPassword: str = self.encry2sha256(Settings.defaultUserPassword)
+        self.userPassword: str = Settings.defaultUserPassword
         self.IPv4Port: int = 21
         self.IPv6Port: int = 0
         self.isGBK: bool = True
@@ -48,7 +48,7 @@ class Settings:
 
             self.directoryList = variables.get("directoryList", [self.appDirectory])
             self.userName = variables.get("userName", Settings.defaultUserName)
-            self.userPassword = variables.get("userPassword", self.encry2sha256(Settings.defaultUserPassword))
+            self.userPassword = variables.get("userPassword", Settings.defaultUserPassword)
             self.IPv4Port = variables.get("IPv4Port", 21)
             self.IPv6Port = variables.get("IPv6Port", 0)
             self.isGBK = variables.get("isGBK", True)
@@ -68,7 +68,7 @@ class Settings:
                 self.userName = Settings.defaultUserName
                 logger.warning(f"userName 类型错误，已恢复默认：{self.userName}")
             if not isinstance(self.userPassword, str):
-                self.userPassword = self.encry2sha256(Settings.defaultUserPassword)
+                self.userPassword = Settings.defaultUserPassword
                 logger.warning(f"userPassword 类型错误，已恢复默认：{self.userPassword}")
             if not isinstance(self.IPv4Port, int):
                 self.IPv4Port = 21
