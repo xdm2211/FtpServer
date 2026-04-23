@@ -843,7 +843,9 @@ class FTPHandler(AsyncChat):
 
             # remove client IP address from ip map
             if self.remote_ip in self.server.ip_map:
-                self.server.ip_map.remove(self.remote_ip)
+                self.server.ip_map[self.remote_ip] -= 1
+                if self.server.ip_map[self.remote_ip] <= 0:
+                    del self.server.ip_map[self.remote_ip]
 
             if self.fs is not None:
                 self.fs.cmd_channel = None

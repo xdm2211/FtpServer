@@ -39,6 +39,7 @@ import select
 import threading
 import time
 import traceback
+from collections import Counter
 
 from .ioloop import Acceptor
 from .log import PREFIX
@@ -100,7 +101,7 @@ class FTPServer(Acceptor):
         Acceptor.__init__(self, ioloop=ioloop)
         self.handler = handler
         self.backlog = backlog
-        self.ip_map = []
+        self.ip_map = Counter()
         # in case of FTPS class not properly configured we want errors
         # to be raised here rather than later, when client connects
         if hasattr(handler, "get_ssl_context"):
@@ -262,7 +263,7 @@ class FTPServer(Acceptor):
                 return
 
             ip = addr[0]
-            self.ip_map.append(ip)
+            self.ip_map[ip] += 1
 
             # For performance and security reasons we should always set a
             # limit for the number of file descriptors that socket_map
@@ -276,7 +277,7 @@ class FTPServer(Acceptor):
             # accept only a limited number of connections from the same
             # source address.
             if self.max_cons_per_ip:
-                if self.ip_map.count(ip) > self.max_cons_per_ip:
+                if self.ip_map[ip] > self.max_cons_per_ip:
                     handler.handle_max_cons_per_ip()
                     return
 
@@ -298,7 +299,9 @@ class FTPServer(Acceptor):
             if handler is not None:
                 handler.close()
             elif ip is not None and ip in self.ip_map:
-                self.ip_map.remove(ip)
+                self.ip_map[ip] -= 1
+                if self.ip_map[ip] <= 0:
+                    del self.ip_map[ip]
 
     def handle_error(self):
         """Called to handle any uncaught exceptions."""
