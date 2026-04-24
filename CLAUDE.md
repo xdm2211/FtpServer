@@ -22,20 +22,6 @@ pip install -r requirements.txt
 pywin32_postinstall -install
 ```
 
-### 构建可执行文件
-
-**PyInstaller（推荐用于快速构建）：**
-```bash
-pyinstaller.exe -F -w .\ftpServer.py -i .\ftpServer.ico --version-file .\file_version_info.txt
-# 首次构建后可使用 spec 文件：
-pyinstaller.exe .\ftpServer.spec
-```
-
-**Nuitka（用于优化构建）：**
-```bash
-python -m nuitka .\ftpServer.py --windows-icon-from-ico=.\ftpServer.ico --standalone --lto=yes --python-flag=-O --enable-plugin=tk-inter --windows-console-mode=disable --company-name=JARK006 --product-name=ftpServer --file-version=1.26.0.0 --product-version=1.26.0.0 --file-description="FtpServer Github@JARK006" --copyright="Copyright (C) 2023-2026 Github@JARK006"
-```
-
 ## 架构
 
 ```
