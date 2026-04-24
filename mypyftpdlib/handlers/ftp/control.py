@@ -1226,6 +1226,8 @@ class FTPHandler(AsyncChat):
                 return ""
             elif elapsed < 1.0:
                 return f"{int(elapsed*1e3)}毫秒"
+            elif elapsed < 10.0:
+                return f"{elapsed:.1f}秒"
             elif elapsed < 60.0:
                 return f"{int(elapsed)}秒"
             else:
