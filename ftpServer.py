@@ -390,14 +390,49 @@ def startServer():
         )
 
     try:
+        authorizer = DummyAuthorizer()
+        if userList.isEmpty():
+            if len(settings.userName) > 0:
+                authorizer.add_user(
+                    settings.userName,
+                    settings.userPassword,
+                    settings.directoryList[0],
+                    perm=permReadOnly if settings.isReadOnly else permReadWrite,
+                )
+            else:
+                authorizer.add_anonymous(
+                    settings.directoryList[0],
+                    perm=permReadOnly if settings.isReadOnly else permReadWrite,
+                )
+        else:
+            for userItem in userList.userList:
+                authorizer.add_user(
+                    userItem.userName,
+                    userItem.password,
+                    userItem.path,
+                    perm=userItem.perm,
+                )
+
+        has_tls_cert = os.path.exists(certFilePath) and os.path.exists(keyFilePath)
+        if has_tls_cert:
+            logger.info(
+                "已加载 TLS/SSL 证书文件, 默认启用 FTPS [TLS/SSL显式加密, TLSv1.3]"
+            )
+
         hasStartServer: bool = False
         if isIPv4Supported and settings.IPv4Port > 0:
-            serverThreadV4 = threading.Thread(target=serverThreadFun, args=("IPv4",))
+            handler = create_server_handler(authorizer, has_tls_cert, "IPv4")
+            serverThreadV4 = threading.Thread(
+                target=serverThreadFun, args=("IPv4", handler)
+            )
             serverThreadV4.start()
             hasStartServer = True
 
         if isIPv6Supported and settings.IPv6Port > 0:
-            serverThreadV6 = threading.Thread(target=serverThreadFun, args=("IPv6",))
+            handler = create_server_handler(authorizer, has_tls_cert, "IPv6")
+            serverThreadV6 = threading.Thread(
+                target=serverThreadFun, args=("IPv6", handler)
+            )
             serverThreadV6.start()
             hasStartServer = True
 
@@ -434,56 +469,37 @@ def startServer():
     setConfigWidgetsState(tk.DISABLED)
 
 
-def serverThreadFun(IP_Family: str):
+def create_server_handler(
+    authorizer: DummyAuthorizer, has_tls_cert: bool, IP_Family: str
+) -> type[FTPHandler]:
+    base_handler = TLS_FTPHandler if has_tls_cert else FTPHandler
+    handler_attrs = {
+        "authorizer": authorizer,
+        "encoding": "gbk" if settings.isGBK else "utf8",
+        "permit_foreign_addresses": True,
+        "permit_privileged_ports": True,
+    }
+
+    if has_tls_cert:
+        handler_attrs.update(
+            {
+                "certfile": certFilePath,
+                "keyfile": keyFilePath,
+                "tls_control_required": True,
+                "tls_data_required": True,
+                "ssl_context": None, # Keep TLS context cache isolated on this dynamic handler class.
+            }
+        )
+
+    return type(f"{IP_Family}{base_handler.__name__}", (base_handler,), handler_attrs)
+
+
+def serverThreadFun(IP_Family: str, handler: type[FTPHandler]):
     global settings
-    global userList
     global serverV4
     global isIPv4ThreadRunning
     global serverV6
     global isIPv6ThreadRunning
-    global certFilePath
-    global keyFilePath
-
-    authorizer = DummyAuthorizer()
-
-    if userList.isEmpty():
-        if len(settings.userName) > 0:
-            authorizer.add_user(
-                settings.userName,
-                settings.userPassword,
-                settings.directoryList[0],
-                perm=permReadOnly if settings.isReadOnly else permReadWrite,
-            )
-        else:
-            authorizer.add_anonymous(
-                settings.directoryList[0],
-                perm=permReadOnly if settings.isReadOnly else permReadWrite,
-            )
-    else:
-        for userItem in userList.userList:
-            authorizer.add_user(
-                userItem.userName,
-                userItem.password,
-                userItem.path,
-                perm=userItem.perm,
-            )
-
-    if os.path.exists(certFilePath) and os.path.exists(keyFilePath):
-        handler = TLS_FTPHandler
-        handler.certfile = certFilePath  # type: ignore
-        handler.keyfile = keyFilePath  # type: ignore
-        handler.tls_control_required = True
-        handler.tls_data_required = True
-        logger.info(
-            "已加载 TLS/SSL 证书文件, 默认启用 FTPS [TLS/SSL显式加密, TLSv1.3]"
-        )
-    else:
-        handler = FTPHandler
-
-    handler.authorizer = authorizer
-    handler.encoding = "gbk" if settings.isGBK else "utf8"
-    handler.permit_foreign_addresses = True
-    handler.permit_privileged_ports = True
 
     if IP_Family == "IPv4":
         try:

@@ -4,6 +4,7 @@ dist
 env
 venv
 output
+tests
 nuitkaHelp.txt
 FtpServer.json
 *.csv
