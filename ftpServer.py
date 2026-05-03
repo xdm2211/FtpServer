@@ -92,13 +92,16 @@ def scale(n: int) -> int:
 def showHelpWindow():
     global mainWindow
     global iconImage
-    global uiFont
 
     helpWindows = tk.Toplevel(mainWindow)
     helpWindows.geometry(f"{scale(600)}x{scale(500)}")
     helpWindows.minsize(scale(600), scale(500))
     helpWindows.title("帮助")
     helpWindows.iconphoto(False, iconImage)  # type: ignore
+
+    uiFont = font.Font(
+        family="Consolas", size=font.nametofont("TkTextFont").cget("size")
+    )
     helpTextWidget = scrolledtext.ScrolledText(
         helpWindows, bg="#dddddd", wrap=tk.CHAR, font=uiFont, width=0, height=0
     )
@@ -913,7 +916,6 @@ def check_single_instance() -> tuple[bool, int]:
 def main():
     global scaleFactor
     global iconImage
-    global uiFont
     global settings
     global userList
     global mainWindow
@@ -971,7 +973,7 @@ def main():
     mainWindow = tk.Tk()  # 实例化tk对象
     scaleFactor = int(mainWindow.tk.call("tk", "scaling") * 75)
     uiFont = font.Font(
-        family="Consolas", size=font.nametofont("TkTextFont").cget("size")
+        family="Microsoft YaHei", size=font.nametofont("TkTextFont").cget("size")
     )
     style = ttk.Style(mainWindow)
     style.configure("TButton", width=-5, padding=(scale(8), scale(2)))
