@@ -416,7 +416,7 @@ def startServer():
         has_tls_cert = os.path.exists(certFilePath) and os.path.exists(keyFilePath)
         if has_tls_cert:
             logger.info(
-                "已加载 TLS/SSL 证书文件, 默认启用 FTPS [TLS/SSL显式加密, TLSv1.3]"
+                "已加载 TLS/SSL 证书文件, 默认启用 FTPS [TLS/SSL显式加密]"
             )
 
         hasStartServer: bool = False
@@ -1143,7 +1143,7 @@ def main():
         mainWindow.withdraw()
 
     if os.path.exists(certFilePath) and os.path.exists(keyFilePath):
-        logger.info("检测到 TLS/SSL 证书文件, 默认使用 FTPS [TLS/SSL显式加密, TLSv1.3]")
+        logger.info("检测到 TLS/SSL 证书文件, 默认使用 FTPS [TLS/SSL显式加密]")
 
     mainWindow.mainloop()
 
