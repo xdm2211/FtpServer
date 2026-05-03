@@ -12,7 +12,18 @@ if (-not (Test-Path -LiteralPath $sourceFile)) {
 }
 
 if (-not (Test-Path -LiteralPath $activateScript)) {
-    throw "未找到虚拟环境激活脚本: $activateScript"
+    Write-Host ""
+    Write-Host "错误: 未找到虚拟环境 ($venvPath)" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "请先创建虚拟环境并安装依赖:" -ForegroundColor Yellow
+    Write-Host "  python -m venv venv"
+    Write-Host "  .\venv\Scripts\Activate.ps1"
+    Write-Host "  pip install -r requirements.txt"
+    Write-Host "  pip install Nuitka[onefile]"
+    Write-Host "  pywin32_postinstall -install"
+    Write-Host ""
+    Write-Host "详细说明请参考 ftpServer.py 文件顶部的注释。" -ForegroundColor Yellow
+    exit 1
 }
 
 $versionPattern = '^\s*appVersion\s*=\s*"v(\d+)\.(\d+)(?:\.(\d+))?"\s*$'
