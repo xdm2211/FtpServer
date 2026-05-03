@@ -479,7 +479,7 @@ def create_server_handler(
     handler_attrs = {
         "authorizer": authorizer,
         "encoding": "gbk" if settings.isGBK else "utf8",
-        "permit_foreign_addresses": True,
+        "permit_foreign_addresses": True, # 允许所有IP地址连接以适应复杂的网络环境，但有被滥用于 FTP bounce、端口探测或内网探测的风险
         "permit_privileged_ports": True,
     }
 
